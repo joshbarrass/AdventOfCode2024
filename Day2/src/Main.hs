@@ -2,8 +2,12 @@ module Main where
 
 import ParseArgs
 import Control.Monad.State.Lazy
+import Data.List
 
 type SafetyState = State Integer
+
+removeAt :: Int -> [a] -> [a]
+removeAt i xs = take i xs ++ drop (i+1) xs
 
 safetyFunc :: [Integer] -> SafetyState Bool
 safetyFunc [] = return True
@@ -21,11 +25,17 @@ safetyFunc (x:y:xs) = do
         diffDir = signum diff
 
 isSafe :: [Integer] -> Bool
-isSafe x = evalState (safetyFunc x) 0
+isSafe x = any (doit . uncurry removeAt) iters
+  where toRem = [0..(length x - 1)] :: [Int]
+        iters = zip toRem (repeat x)
+        doit xs = evalState (safetyFunc xs) 0
 
+countTrue :: [Bool] -> Integer
+countTrue = foldl' (\acc x -> if x then acc + 1 else acc) 0
+      
 main :: IO ()
 main = do
   inp <- loadInputFileBySpaces
   let parsed = map (map read) inp :: [[Integer]]
   let safety = map isSafe parsed :: [Bool]
-  print $ length $ filter id safety
+  print $ countTrue safety
