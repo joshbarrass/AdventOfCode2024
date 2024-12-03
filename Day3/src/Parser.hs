@@ -1,8 +1,13 @@
 module Parser (
-  parseAllMul
+  parseAllIns
+ ,getEnabledMul
+ ,Instruction(..) 
               ) where
 
 import Text.ParserCombinators.ReadP
+import qualified Control.Monad.State.Lazy as State
+
+data Instruction = Mul (Integer, Integer) | Do | Dont
 
 -- define a parser that gives the OK when we see "mul("
 mulStart :: ReadP ()
@@ -16,29 +21,51 @@ numRead = do
   return $ read numStr
 
 -- define a parser that reads a full mul expression
-mulExpr :: ReadP (Integer, Integer)
+mulExpr :: ReadP Instruction
 mulExpr = do
   mulStart
   a <- numRead
   _ <- char ','
   b <- numRead
   _ <- char ')'
-  return (a,b)
+  return $ Mul (a,b)
 
--- Define a parser that skips until a valid mul expression is found
-skipToValidMul :: ReadP (Integer, Integer)
-skipToValidMul = mulExpr <++ (get >> skipToValidMul)
+-- define a parser that reads a do instruction
+doExpr :: ReadP Instruction
+doExpr = string "do()" >> return Do
 
--- parser that finds all valid mul expressions in a file, ignoring any
+-- define a parser that reads a don't instruction
+dontExpr :: ReadP Instruction
+dontExpr = string "don't()" >> return Dont
+
+-- Define a parser that skips until a valid instruction is found
+skipToValidIns :: ReadP Instruction
+skipToValidIns = (mulExpr +++ doExpr +++ dontExpr)
+  <++ (get >> skipToValidIns)
+
+-- parser that finds all valid instructions in a file, ignoring any
 -- garbage in between
-allMul :: ReadP [(Integer, Integer)]
-allMul = do
-  mul <- many skipToValidMul
-  return mul
+allIns :: ReadP [Instruction]
+allIns = do
+  ins <- many skipToValidIns
+  return ins
 
 -- user-facing function to run the parser
-parseAllMul :: String -> [(Integer, Integer)]
-parseAllMul contents = (fst . last) allResults
-  where parser = readP_to_S (allMul)
+parseAllIns :: String -> [Instruction]
+parseAllIns contents = (fst . last) allResults
+  where parser = readP_to_S (allIns)
         allResults = parser contents
         
+enabledMul :: [Instruction] -> State.State Bool [(Integer, Integer)]
+enabledMul [] = return []
+enabledMul (Do:xs) = State.put True >> enabledMul xs
+enabledMul (Dont:xs) = State.put False >> enabledMul xs
+enabledMul ((Mul x):xs) = do
+  enabled <- State.get
+  case enabled of True -> do
+                    ys <- enabledMul xs
+                    return $ x : ys
+                  False -> enabledMul xs
+
+getEnabledMul :: [Instruction] -> [(Integer, Integer)]
+getEnabledMul xs = State.evalState (enabledMul xs) True
