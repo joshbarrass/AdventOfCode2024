@@ -71,7 +71,7 @@ height = length
         maxy = maxx - c
 
 indexrd :: Wordsearch -> Coord -> Int
-indexrd ws (x, y) = x - minx
+indexrd _ (x, y) = x - minx
   where c = (x-y)
         minx = max 0 c
 
