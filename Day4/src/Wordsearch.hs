@@ -1,6 +1,6 @@
 module Wordsearch (
-    Wordsearch(..)
-  , Coord(..)
+    Wordsearch
+  , Coord
   , (!.!)
   , (!-!)
   , (!|!)
@@ -98,7 +98,7 @@ htake ws c 1 = [ws !.! c]
 htake ws c (-1) = [ws !.! c]
 htake ws (x, y) n
   | n > 0 = take n $ drop x row
-  | otherwise = reverse $ take actuallyTake $ drop (x+n) row
+  | otherwise = reverse $ take actuallyTake $ drop (x+n+1) row
   where row = ws !! y
         actuallyTake = min (-n) (x+1)
 
@@ -108,7 +108,7 @@ vtake ws c 1 = [ws !.! c]
 vtake ws c (-1) = [ws !.! c]
 vtake ws (x, y) n
   | n > 0 = take n $ drop y col
-  | otherwise = reverse $ take actuallyTake $ drop (y+n) col
+  | otherwise = reverse $ take actuallyTake $ drop (y+n+1) col
   where col = ws !|! x
         actuallyTake = min (-n) (y+1)
 

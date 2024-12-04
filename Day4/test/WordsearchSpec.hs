@@ -72,6 +72,8 @@ main = hspec $ do
       context "and doesn't exceed the width of the wordsearch" $ do
         it "returns the n characters to the right" $ do
           (htake wordsearch coord 4) `shouldBe` "TUVW"
+          (htake wordsearch coord 3) `shouldBe` "TUV"
+          (htake wordsearch coord 2) `shouldBe` "TU"
       context "and exceeds the width of the wordsearch" $ do
         it "returns the characters to the right up to the edge" $ do
           (htake wordsearch coord 100) `shouldBe` "TUVWX"
@@ -79,6 +81,8 @@ main = hspec $ do
       context "and doesn't exceed the width of the wordsearch" $ do
         it "returns the n characters to the left in reverse order" $ do
           (htake wordsearch coord (-4)) `shouldBe` "TSRQ"
+          (htake wordsearch coord (-3)) `shouldBe` "TSR"
+          (htake wordsearch coord (-2)) `shouldBe` "TS"
       context "and exceeds the width of the wordsearch" $ do
         it "returns the characters to the left in reverse order, up to the edge" $ do
           (htake wordsearch coord (-100)) `shouldBe` "TSRQ"
@@ -98,6 +102,8 @@ main = hspec $ do
       context "and doesn't exceed the height of the wordsearch" $ do
         it "returns the n characters below" $ do
           (vtake wordsearch coord 4) `shouldBe` "T20h"
+          (vtake wordsearch coord 3) `shouldBe` "T20"
+          (vtake wordsearch coord 2) `shouldBe` "T2"
       context "and exceeds the height of the wordsearch" $ do
         it "returns the characters below up to the edge" $ do
           (vtake wordsearch coord 100) `shouldBe` "T20hpx%"
@@ -105,6 +111,7 @@ main = hspec $ do
       context "and doesn't exceed the height of the wordsearch" $ do
         it "returns the n characters above in reverse order" $ do
           (vtake wordsearch coord (-3)) `shouldBe` "TLD"
+          (vtake wordsearch coord (-2)) `shouldBe` "TL"
       context "and exceeds the height of the wordsearch" $ do
         it "returns the characters above in reverse order, up to the edge" $ do
           (vtake wordsearch coord (-100)) `shouldBe` "TLD"
