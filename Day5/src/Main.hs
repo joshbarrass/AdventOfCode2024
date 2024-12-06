@@ -19,3 +19,7 @@ main = do
   let validUpdates = filter (isValid rules) updates
   let midpoints = map middle validUpdates
   print $ sum midpoints
+
+  let invalid = filter (not . isValid rules) updates
+  let fixed = map (fix rules) invalid
+  print $ sum $ map middle fixed
