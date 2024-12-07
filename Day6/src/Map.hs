@@ -6,6 +6,7 @@ module Map (
    ,width
    ,height
    ,doGuard
+   ,doGuardWithObject
            ) where
 
 import Data.List
@@ -35,13 +36,15 @@ isLeaving m = do
             ,x == (width m - 1) && d == Map.Right
             ,y == (height m - 1) && d == Down]
 
-isWall :: Map -> State WalkState Bool
-isWall m = do
+isWall :: Map -> Maybe Coord -> State WalkState Bool
+isWall m inserted = do
   WalkState (x, y) d _ <- get
-  return $ or [d == Map.Left && m !.! (x-1, y) == '#'
-            ,d == Up && m !.! (x, y-1) == '#'
-            ,d == Map.Right && m !.! (x+1, y) == '#'
-            ,d == Down && m !.! (x, y+1) == '#']
+  let c' = case d of
+        Map.Left -> (x-1, y)
+        Up -> (x, y-1)
+        Map.Right -> (x+1, y)
+        Down -> (x, y+1)
+  return $ c' == fromMaybe (-1, -1) inserted || m !.! c' == '#'
 
 isLoop :: State WalkState Bool
 isLoop = do
@@ -54,18 +57,18 @@ rotate Map.Right = Down
 rotate Down = Map.Left
 rotate Map.Left = Up
 
-stepGuard :: Map -> State WalkState Bool
-stepGuard m = do
+stepGuard :: Map -> Maybe Coord -> State WalkState Bool
+stepGuard m inserted = do
   looping <- isLoop
   if looping then return False else do
     leaving <- isLeaving m
     if leaving then return True else do
       state <- get
       let WalkState (x, y) d v = state
-      wall <- isWall m
+      wall <- isWall m inserted
       if wall then do
         put $ WalkState (x, y) (rotate d) v
-        stepGuard m
+        stepGuard m inserted
       else do
         let c' = case d of
                       Up -> (x, y-1)
@@ -74,12 +77,18 @@ stepGuard m = do
                       Map.Left -> (x-1, y)
         let v' = set v c' (d : v !.! c')
         put $ WalkState c' d v'
-        stepGuard m
+        stepGuard m inserted
 
-doGuard :: Map -> (Bool, WalkState)
-doGuard m = runState (stepGuard m) initState
+doGuard' :: Map -> Maybe Coord -> (Bool, WalkState)
+doGuard' m c = runState (stepGuard m c) initState
   where startPos = fromJust (findGuard m)
         w = width m
         h = height m
         initVisited = set [[[] | _ <- [0..(w-1)]] | _ <- [0..(h-1)]] startPos [Up]
         initState = WalkState startPos Up initVisited
+
+doGuard :: Map -> (Bool, WalkState)
+doGuard m = doGuard' m Nothing
+
+doGuardWithObject :: Map -> Coord -> (Bool, WalkState)
+doGuardWithObject m c = doGuard' m (Just c)

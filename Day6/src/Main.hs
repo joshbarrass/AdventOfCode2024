@@ -16,7 +16,7 @@ countNotNull = foldl' (\acc x -> if null x then acc else acc + 1) 0
 testWithObject :: Map -> Coord -> Bool
 testWithObject m c
   | x == '^' || x == '#' = False
-  | otherwise = let m' = set m c '#' in not . fst $ doGuard m'
+  | otherwise = not . fst $ doGuardWithObject m c
   where x = m !.! c
 
 getAllCoords :: Grid a -> [Coord]
