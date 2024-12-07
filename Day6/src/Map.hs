@@ -1,6 +1,10 @@
 module Map (
    Map
    ,WalkState(..)
+   ,VisitMap
+   ,Coord
+   ,width
+   ,height
    ,doGuard
            ) where
 
