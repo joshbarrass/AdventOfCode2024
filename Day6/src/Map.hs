@@ -10,7 +10,8 @@ import Data.Maybe
 import Grid
 
 type Map = Grid Char
-type VisitMap = Grid Bool
+type VisitCell = [Direction]
+type VisitMap = Grid VisitCell
 
 data Direction = Up | Down | Left | Right deriving (Show, Eq)
 data WalkState = WalkState { guardPos :: Coord, guardDir :: Direction, visited :: VisitMap }
@@ -38,46 +39,43 @@ isWall m = do
             ,d == Map.Right && m !.! (x+1, y) == '#'
             ,d == Down && m !.! (x, y+1) == '#']
 
+isLoop :: State WalkState Bool
+isLoop = do
+  WalkState c d v <- get
+  return $ d `elem` tail (v !.! c)
+
 rotate :: Direction -> Direction
 rotate Up = Map.Right
 rotate Map.Right = Down
 rotate Down = Map.Left
 rotate Map.Left = Up
 
-stepGuard :: Map -> State WalkState ()
+stepGuard :: Map -> State WalkState Bool
 stepGuard m = do
-  leaving <- isLeaving m
-  if leaving then return () else do
-    state <- get
-    let WalkState (x, y) d v = state
-    wall <- isWall m
-    if wall then do
-      put $ WalkState (x, y) (rotate d) v
-      stepGuard m
-    else do
-      case d of
-           Up -> do
-             let c' = (x, y-1)
-             let v' = set v c' True
-             put $ WalkState c' d v'
-           Map.Right -> do
-             let c' = (x+1, y)
-             let v' = set v c' True
-             put $ WalkState c' d v'
-           Down -> do
-             let c' = (x, y+1)
-             let v' = set v c' True
-             put $ WalkState c' d v'
-           Map.Left -> do
-             let c' = (x-1, y)
-             let v' = set v c' True
-             put $ WalkState c' d v'
-      stepGuard m
+  looping <- isLoop
+  if looping then return False else do
+    leaving <- isLeaving m
+    if leaving then return True else do
+      state <- get
+      let WalkState (x, y) d v = state
+      wall <- isWall m
+      if wall then do
+        put $ WalkState (x, y) (rotate d) v
+        stepGuard m
+      else do
+        let c' = case d of
+                      Up -> (x, y-1)
+                      Map.Right -> (x+1, y)
+                      Down -> (x, y+1)
+                      Map.Left -> (x-1, y)
+        let v' = set v c' (d : v !.! c')
+        put $ WalkState c' d v'
+        stepGuard m
 
-doGuard :: Map -> WalkState
-doGuard m = execState (stepGuard m) initState
+doGuard :: Map -> (Bool, WalkState)
+doGuard m = runState (stepGuard m) initState
   where startPos = fromJust (findGuard m)
         w = width m
         h = height m
-        initVisited = set [[False | _ <- [0..(w-1)]] | _ <- [0..(h-1)]] startPos True
+        initVisited = set [[[] | _ <- [0..(w-1)]] | _ <- [0..(h-1)]] startPos [Up]
         initState = WalkState startPos Up initVisited

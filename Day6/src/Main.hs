@@ -4,14 +4,15 @@ import Data.List
 import ParseArgs
 import Map
 
-countTrue :: [Bool] -> Integer
-countTrue = foldl' (\acc x -> if x then acc + 1 else acc) 0
+countNotNull :: [[a]] -> Integer
+countNotNull = foldl' (\acc x -> if null x then acc else acc + 1) 0
 
 main :: IO ()
 main = do
   m <- loadInputFileLines :: IO Map
   let m' = filter (not . null) m
-  let state = doGuard m'
+  let (exited, state) = doGuard m'
+  print exited
   let v = visited state
-  let c = foldl' (\acc x -> acc + countTrue x) 0 v
+  let c = foldl' (\acc x -> acc + countNotNull x) 0 v
   print c
