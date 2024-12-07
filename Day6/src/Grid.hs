@@ -15,7 +15,9 @@ module Grid (
   , set
                   ) where
 
-type Grid a = [[a]]
+import Data.Vector
+
+type Grid a = Vector (Vector a)
 type Coord = (Int, Int)
 
 {-
@@ -43,26 +45,26 @@ rdtake: gets n characters going down along the right diagonal (south-east)
 -}
 
 width :: Grid a -> Int
-width = length . (flip (!-!) 0)
+width = Data.Vector.length . (flip (!-!) 0)
 
 height :: Grid a -> Int
-height = length
+height = Data.Vector.length
 
 (!.!) :: Grid a -> Coord -> a
-(!.!) ws (x, y) = (ws !! y) !! x
+(!.!) ws (x, y) = (ws ! y) ! x
 
 -- alias for consistency
-(!-!) :: Grid a -> Int -> [a]
-(!-!) = (!!)
+(!-!) :: Grid a -> Int -> Vector a
+(!-!) = (!)
 
 -- gets a column
-(!|!) :: Grid a -> Int -> [a]
-(!|!) ws x = [ws !.! (x,y) | y <- [0..(h-1)]]
+(!|!) :: Grid a -> Int -> Vector a
+(!|!) ws x = fromList [ws !.! (x,y) | y <- [0..(h-1)]]
   where h = height ws
 
 -- gets a diagonal going along \, from smallest x to biggest x
-(!\!) :: Grid a -> Coord -> [a]
-(!\!) ws (x, y) = map ((!.!) ws) $ zip [minx..maxx] [miny..maxy]
+(!\!) :: Grid a -> Coord -> Vector a
+(!\!) ws (x, y) = Data.Vector.map ((!.!) ws) $ Data.Vector.zip (fromList [minx..maxx]) (fromList [miny..maxy])
   where w = width ws
         h = height ws
         c = (x-y)
@@ -77,8 +79,8 @@ indexrd _ (x, y) = x - minx
         minx = max 0 c
 
 -- gets a diagonal going along /, from smallest x to biggest x
-(!/!) :: Grid a -> Coord -> [a]
-(!/!) ws (x, y) = map ((!.!) ws) $ zip [minx..maxx] (reverse [miny..maxy])
+(!/!) :: Grid a -> Coord -> Vector a
+(!/!) ws (x, y) = Data.Vector.map ((!.!) ws) $ Data.Vector.zip (fromList [minx..maxx]) (fromList (Prelude.reverse [miny..maxy]))
   where w = width ws
         h = height ws
         c = (x+y)
@@ -93,51 +95,51 @@ indexld ws (x, y) = x - minx
         c = (x+y)
         minx = max 0 (c - h + 1)
 
-htake :: Grid a -> Coord -> Int -> [a]
-htake _ _ 0 = []
-htake ws c 1 = [ws !.! c]
-htake ws c (-1) = [ws !.! c]
+htake :: Grid a -> Coord -> Int -> Vector a
+htake _ _ 0 = fromList []
+htake ws c 1 = fromList [ws !.! c]
+htake ws c (-1) = fromList [ws !.! c]
 htake ws (x, y) n
-  | n > 0 = take n $ drop x row
-  | otherwise = reverse $ take actuallyTake $ drop (x+n+1) row
-  where row = ws !! y
+  | n > 0 = Data.Vector.take n $ Data.Vector.drop x row
+  | otherwise = Data.Vector.reverse $ Data.Vector.take actuallyTake $ Data.Vector.drop (x+n+1) row
+  where row = ws ! y
         actuallyTake = min (-n) (x+1)
 
-vtake :: Grid a -> Coord -> Int -> [a]
-vtake _ _ 0 = []
-vtake ws c 1 = [ws !.! c]
-vtake ws c (-1) = [ws !.! c]
+vtake :: Grid a -> Coord -> Int -> Vector a
+vtake _ _ 0 = fromList []
+vtake ws c 1 = fromList [ws !.! c]
+vtake ws c (-1) = fromList [ws !.! c]
 vtake ws (x, y) n
-  | n > 0 = take n $ drop y col
-  | otherwise = reverse $ take actuallyTake $ drop (y+n+1) col
+  | n > 0 = Data.Vector.take n $ Data.Vector.drop y col
+  | otherwise = Data.Vector.reverse $ Data.Vector.take actuallyTake $ Data.Vector.drop (y+n+1) col
   where col = ws !|! x
         actuallyTake = min (-n) (y+1)
 
-ldtake :: Grid a -> Coord -> Int -> [a]
-ldtake _ _ 0 = []
-ldtake ws c 1 = [ws !.! c]
-ldtake ws c (-1) = [ws !.! c]
+ldtake :: Grid a -> Coord -> Int -> Vector a
+ldtake _ _ 0 = fromList []
+ldtake ws c 1 = fromList [ws !.! c]
+ldtake ws c (-1) = fromList [ws !.! c]
 ldtake ws c n
-  | n > 0 = reverse $ take actuallyTake $ drop (i-n+1) diag
-  | otherwise = take (-n) $ drop i diag
+  | n > 0 = Data.Vector.reverse $ Data.Vector.take actuallyTake $ Data.Vector.drop (i-n+1) diag
+  | otherwise = Data.Vector.take (-n) $ Data.Vector.drop i diag
   where diag = ws !/! c
         i = indexld ws c
         actuallyTake = min n (i+1)
 
-rdtake :: Grid a -> Coord -> Int -> [a]
-rdtake _ _ 0 = []
-rdtake ws c 1 = [ws !.! c]
-rdtake ws c (-1) = [ws !.! c]
+rdtake :: Grid a -> Coord -> Int -> Vector a
+rdtake _ _ 0 = fromList []
+rdtake ws c 1 = fromList [ws !.! c]
+rdtake ws c (-1) = fromList [ws !.! c]
 rdtake ws c n
-  | n > 0 = take n $ drop i diag
-  | otherwise = reverse $ take actuallyTake $ drop (i+n+1) diag
+  | n > 0 = Data.Vector.take n $ Data.Vector.drop i diag
+  | otherwise = Data.Vector.reverse $ Data.Vector.take actuallyTake $ Data.Vector.drop (i+n+1) diag
   where diag = ws !\! c
         i = indexrd ws c
         actuallyTake = min (-n) (i+1)
 
 set :: Grid a -> Coord -> a -> Grid a
 set old (x,y) item
-  | (x < width old && x >= 0) && (y < height old && y >= 0) = take y old ++ row' : drop (y+1) old
+  | (x < width old && x >= 0) && (y < height old && y >= 0) = Data.Vector.take y old Data.Vector.++ fromList [row'] Data.Vector.++ Data.Vector.drop (y+1) old
   | otherwise = old
-  where row = old !! y
-        row' = take x row ++ item : drop (x+1) row
+  where row = old ! y
+        row' = Data.Vector.take x row Data.Vector.++ fromList [item] Data.Vector.++ Data.Vector.drop (x+1) row

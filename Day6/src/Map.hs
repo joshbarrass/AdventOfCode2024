@@ -14,6 +14,8 @@ import Control.Monad.State.Lazy
 import Data.Maybe
 import Grid
 
+import Data.Vector
+
 type Map = Grid Char
 type VisitCell = [Direction]
 type VisitMap = Grid VisitCell
@@ -23,15 +25,15 @@ data WalkState = WalkState { guardPos :: Coord, guardDir :: Direction, visited :
 
 findGuard :: Map -> Maybe Coord
 findGuard m = do
-  y <- findIndex (elem '^') m
+  y <- Data.Vector.findIndex (Data.Vector.elem '^') m
   let row = m !-! y
-  x <- elemIndex '^' row
+  x <- Data.Vector.elemIndex '^' row
   return (x, y)
 
 isLeaving :: Map -> State WalkState Bool
 isLeaving m = do
   WalkState (x, y) d _ <- get
-  return $ or [x == 0 && d == Map.Left
+  return $ Prelude.or [x == 0 && d == Map.Left
             ,y == 0 && d == Up
             ,x == (width m - 1) && d == Map.Right
             ,y == (height m - 1) && d == Down]
@@ -49,7 +51,7 @@ isWall m inserted = do
 isLoop :: State WalkState Bool
 isLoop = do
   WalkState c d v <- get
-  return $ d `elem` tail (v !.! c)
+  return $ d `Prelude.elem` Prelude.tail (v !.! c)
 
 rotate :: Direction -> Direction
 rotate Up = Map.Right
@@ -84,7 +86,7 @@ doGuard' m c = runState (stepGuard m c) initState
   where startPos = fromJust (findGuard m)
         w = width m
         h = height m
-        initVisited = set [[[] | _ <- [0..(w-1)]] | _ <- [0..(h-1)]] startPos [Up]
+        initVisited = set (fromList [fromList [[] | _ <- [0..(w-1)]] | _ <- [0..(h-1)]]) startPos [Up]
         initState = WalkState startPos Up initVisited
 
 doGuard :: Map -> (Bool, WalkState)
