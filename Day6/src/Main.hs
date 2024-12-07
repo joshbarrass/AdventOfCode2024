@@ -5,6 +5,8 @@ import ParseArgs
 import Map
 import Grid
 
+import Control.Parallel.Strategies
+
 countTrue :: [Bool] -> Integer
 countTrue = foldl' (\acc x -> if x then acc + 1 else acc) 0
 
@@ -40,6 +42,7 @@ main = do
   print $ length cs
 
   -- do tests only at those coordinates the guard could hit
-  let tests = map (testWithObject m') cs
+  -- let tests = map (testWithObject m') cs `using` parBuffer 2500 rdeepseq
+  let tests = parMap rdeepseq (testWithObject m') cs
   let possibleLoops = countTrue tests
   print possibleLoops
